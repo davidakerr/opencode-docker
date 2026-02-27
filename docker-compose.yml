@@ -1,0 +1,43 @@
+services:
+  code-server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    # Built locally from ghcr.io/coder/code-server:latest + opencode install.
+    container_name: code-server
+    restart: unless-stopped
+
+    environment:
+      - TZ=Europe/London
+
+    ports:
+      - "8080:8080"
+    command: ["--bind-addr", "0.0.0.0:8080", "--auth", "none", "/projects"]
+
+    volumes:
+      - ./projects:/projects:rw
+      - ./config/opencode.json:/root/.config/opencode/opencode.json
+
+    networks:
+      - default
+
+    depends_on:
+      - playwright-mcp
+
+  playwright-mcp:
+    image: mcr.microsoft.com/playwright/mcp:latest
+    container_name: codeserver-playwright-mcp
+    entrypoint: ["node", "cli.js"]
+    command:
+      - "--headless"
+      - "--browser"
+      - "chromium"
+      - "--no-sandbox"
+      - "--port"
+      - "8931"
+      - "--host"
+      - "0.0.0.0"
+      - "--allowed-hosts"
+      - "*"
+    init: true
+    restart: unless-stopped
